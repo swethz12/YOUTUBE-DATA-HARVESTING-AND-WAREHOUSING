@@ -21,15 +21,21 @@ PostgreSQL: An advanced, highly scalable relational database management system u
 
 
 Ethical Perspective on YouTube Data Scraping:
+
 Emphasizes the importance of ethical and responsible scraping practices, including adherence to YouTube's terms and conditions, obtaining appropriate authorization, and compliance with data protection regulations.
 Highlights the need to handle collected data responsibly, ensuring privacy, confidentiality, and prevention of misuse or misrepresentation.
 Encourages consideration of the potential impact on the platform and its community, promoting fair and sustainable scraping processes to uphold integrity while extracting valuable insights from YouTube data.
 
 Required Libraries:
+
 googleapiclient.discovery
+
 streamlit
+
 psycopg2
+
 pymongo
+
 pandas
 
 Features:
