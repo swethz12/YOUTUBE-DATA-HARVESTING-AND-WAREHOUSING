@@ -4,7 +4,7 @@ import psycopg2
 import pandas as pd
 import streamlit as st
 
-#API JEY CONNECTION
+#API KEY CONNECTION
 def api_connect():
     api_id="AIzaSyBOlWgSZgqRi9vTQ6tjl8YVXql28VFZI0g"
 
@@ -483,7 +483,7 @@ if st.button("Collect and store data"):#creating a button# by clicking the butto
     coll1=db["channel_details"]
     for ch_data in coll1.find({},{"_id":0,"channel_information":1}):
         ch_ids.append(ch_data["channel_information"]["channelid"])
-        
+
 #IF ALREADY THE DATA EXISTS IT WOULD SHOW A MESSAGE SAYING DETAILS ALREADY EXISTS IF NOT IT WOULD ALLOW YOU TO INSERT IDS
     if channel_id in ch_ids:#if channalmid already exists
         st.success('Details already exists')
