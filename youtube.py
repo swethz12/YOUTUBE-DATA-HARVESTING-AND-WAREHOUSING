@@ -4,8 +4,7 @@ import psycopg2
 import pandas as pd
 import streamlit as st
 
-#api key connection
-
+#API JEY CONNECTION
 def api_connect():
     api_id="AIzaSyBOlWgSZgqRi9vTQ6tjl8YVXql28VFZI0g"
 
@@ -17,7 +16,8 @@ def api_connect():
 #to access the function create a variable youtube
 youtube=api_connect()
 
-#get channel information
+#TO GET CHANNEL INFORMATION FROM YOUTUBE
+    #CONVERTING TO DICTIONARY SO WE CAN UPLOAD IT TO MONGO DB
 def get_channel_info(channel_id):
     request=youtube.channels().list(
                     part="snippet,ContentDetails,statistics",
@@ -36,7 +36,7 @@ def get_channel_info(channel_id):
                 playlist_id=i['contentDetails']['relatedPlaylists']['uploads'])# taken out the nessory details is taken so it would be easy to put in mongodb
     return data
 
-#get video ids
+#TO GET VIDEO IDS REFERRING CHANNEL INFORMATION
 def get_videoids(channel_id):
     videoids=[]
     response=youtube.channels().list(id=channel_id,
@@ -59,7 +59,7 @@ def get_videoids(channel_id):
     return videoids #all values inside the list,to return to function
 
 
-#get video information
+#TO GET VIDEO INFORMATION REFERRING VIDEO IDS
 def get_video_info(videoids):
     videodata=[]
     for video_id in videoids:
@@ -89,7 +89,7 @@ def get_video_info(videoids):
     return videodata
 
         
-#get commnt info
+#TO GET COMMENT INFORMATION REFERRING VIDEO IDS
 def get_comment_info(videoids):
         
         Commentdata=[]
@@ -113,7 +113,7 @@ def get_comment_info(videoids):
             pass#ignore error
         return Commentdata
 
-#get playlist details
+#TO GET PLAYLIST DETAILS REFERRING CHANNEL IDS
 def get_playlist_details(channelids):
     next_page_token=None
     alldata=[]
@@ -140,12 +140,11 @@ def get_playlist_details(channelids):
             break
     return alldata 
 
-#upload to mongo db
-
+#TO UPLOAD ALL DICTIONARY'S TO MONGODB
 client=pymongo.MongoClient("mongodb+srv://swethasajeev:swethasajeev@cluster0.i7nyp09.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
 db=client["youtubedata"]
 
-
+#CONVERTING ALL FUNCTIONS TO ONE SINGLE FUNCTION
 def channel_details(channel_id):#at a time all fun to b called and data to be inserted
     ch_details= get_channel_info(channel_id)
     pl_detalis=get_playlist_details(channel_id)
@@ -159,8 +158,11 @@ def channel_details(channel_id):#at a time all fun to b called and data to be in
     return "upload completed successfully"
         
 
-#table creation and insertion of data channel,playlist,vdo,cmt(c*3i)
-#connection
+#TABLE CREATION AND INSERTION OF DATA'S OF CHANNEL,PLAYLIST,VIDEO AND COMMENT
+
+# CHANNEL CONNECTION
+
+# SQL CONNECTION
 def channels_table(channel_name_s):
     mydb=psycopg2.connect(host="localhost",
                         user="postgres",
@@ -168,7 +170,7 @@ def channels_table(channel_name_s):
                         database="youtubedata",
                         port="5432")
     cursor=mydb.cursor()
-    #create table
+#CREATE TABLE IN POSTGRESQL
     try:
        
         create_query_1='''create table if not exists channels(channelname varchar(100),
@@ -185,14 +187,15 @@ def channels_table(channel_name_s):
     except:
         print("channel table already created")
 
-    #extracting data from mongo db and converting it as df
+#EXTRACTING DATA FROM MONGODB AND CONVERTING IT TO DATAFRAMES
     single_channel_detail=[]
     db=client["youtubedata"]
     coll1=db["channel_details"]
     for ch_data in coll1.find({"channel_information.channelname": channel_name_s},{"_id":0}):
         single_channel_detail.append(ch_data["channel_information"])
     df_single_channel_detail=pd.DataFrame(single_channel_detail)
-    #df to to sqltable 
+    
+#INSERTING DATA'S TO TABLE
     for index,row in df_single_channel_detail.iterrows():
                 insert_query='''insert into channels(channelid,
                                                     channelname, 
@@ -220,8 +223,9 @@ def channels_table(channel_name_s):
                    return news
 
 
-#PLAYLIST connection table
-#connection playlist table
+#PLAYLIST CONNECTION
+
+#SQL CONNECTION
 def playlist_table(channel_name_s):
         mydb=psycopg2.connect(host="localhost",
                         user="postgres",
@@ -229,7 +233,7 @@ def playlist_table(channel_name_s):
                         database="youtubedata",
                         port="5432")
         cursor=mydb.cursor()
-#creation
+#
         create_query='''create table if not exists playlists(playlist_id varchar(100)primary key,
                                                                         Title varchar(80),
                                                                         Channel_id varchar(100),
@@ -241,7 +245,7 @@ def playlist_table(channel_name_s):
         cursor.execute(create_query)
         mydb.commit()
 
-#extracting data from mongo db and converting it as df
+##EXTRACTING DATA FROM MONGODB AND CONVERTING IT TO DATAFRAMES
         single_playlist_detail=[]
         db=client["youtubedata"]
         coll1=db["channel_details"]
@@ -250,9 +254,7 @@ def playlist_table(channel_name_s):
 
         df_single_playlist_detail=pd.DataFrame(single_playlist_detail[0])
 
-
-# inserting into sql table from df
-
+#INSERTING DATA'S TO TABLE
         for index,row in df_single_playlist_detail.iterrows():
                         insert_query='''insert into playlists(playlist_id,
                                                         Title, 
@@ -274,8 +276,9 @@ def playlist_table(channel_name_s):
 
 
 
-#VIDEO connection
-#connection
+#VIDEO CONNECTION
+
+#SQL CONNECTION
 def video_table(channel_name_s):
         mydb=psycopg2.connect(host="localhost",
                         user="postgres",
@@ -284,8 +287,7 @@ def video_table(channel_name_s):
                         port="5432")
         cursor=mydb.cursor()
 
-#creating table for videoinformation
-    
+#CREATE TABLE IN POSTGRESQL
         create_query='''create table if not exists videos(Channel_Name varchar(100),
                                                                 Channel_id varchar(80),
                                                                 Video_id varchar(20)primary key,
@@ -307,7 +309,7 @@ def video_table(channel_name_s):
         cursor.execute(create_query)
         mydb.commit()
 
-# inserting into sql table from df
+#EXTRACTING DATA FROM MONGODB AND CONVERTING IT TO DATAFRAMES
         single_video_detail=[]
         db=client["youtubedata"]
         coll1=db["channel_details"]
@@ -316,7 +318,7 @@ def video_table(channel_name_s):
 
         df_single_video_detail=pd.DataFrame(single_video_detail[0])
         
-        #inserting into sql table from df
+#INSERTING DATA'S TO TABLE
         for index,row in df_single_video_detail.iterrows():
                         insert_query='''insert into videos(Channel_Name,
                                                         Channel_id, 
@@ -356,8 +358,9 @@ def video_table(channel_name_s):
 
 
 
-#COMMENT table
-#connection
+#COMMENT CONNECTION
+
+#CONNECTION
 def comment_table(channel_name_s):
         mydb=psycopg2.connect(host="localhost",
                                 user="postgres",
@@ -365,8 +368,8 @@ def comment_table(channel_name_s):
                                 database="youtubedata",
                                 port="5432")
         cursor=mydb.cursor()
-#creation
 
+#CREATE TABLE IN POSTGRESQL
         create_query_1='''create table if not exists comments(Commentid varchar(100)primary key,
                                                                 videoid varchar(80),
                                                                 commenttext text,
@@ -376,7 +379,7 @@ def comment_table(channel_name_s):
         cursor.execute(create_query_1)
         mydb.commit()
 
-# converting into df
+#EXTRACTING DATA FROM MONGODB AND CONVERTING IT TO DATAFRAMES
         single_comment_detail=[]
         db=client["youtubedata"]
         coll1=db["channel_details"]
@@ -385,7 +388,7 @@ def comment_table(channel_name_s):
 
         df_single_comment_detail=pd.DataFrame(single_comment_detail[0])
 
-#inserting into table
+#INSERTING DATA'S TO TABLE
         for index,row in df_single_comment_detail.iterrows():
                                 insert_query='''insert into comments(Commentid,
                                                                 videoid, 
@@ -405,7 +408,7 @@ def comment_table(channel_name_s):
                                 cursor.execute(insert_query,values)
                                 mydb.commit()
 
-#CONVERTING ALL FUNCTIONS TO ONE SINGLE FUNCTION
+#CONVERTING ALL TABLE TO ONE SINGLE FUNCTION
 def tables(single_channel):
     news=channels_table(single_channel)
     if news:
@@ -417,7 +420,7 @@ def tables(single_channel):
 
     return"Tables created successfully"
 
-#to see df in streamlit
+#TO SEE DATA FRAMES IN STREAMLIT
 def show_channel_table():
     ch_list=[]
     db=client["youtubedata"]
@@ -461,6 +464,7 @@ def show_comment_table():
 
 #STREAMLIT PART 
 
+#SIDE BAR
 with st.sidebar:
     st.title(":black[YouTube Data Harvesting and Warehousing using SQL and Streamlit]")
     st.header("Skill Take Away")
@@ -470,6 +474,7 @@ with st.sidebar:
     st.caption('API integration')
     st.caption('Data Management using Mongo DB & SQL')
 
+#ENTER CHANNELID BAR:-BY ENTERING THE CHANNEL ID THE DATAS WILL BE EXTRACTED FROM YOUTUBE
 channel_id=st.text_input("Enter the Channel ID")#channel id
 
 if st.button("Collect and store data"):#creating a button# by clicking the button all the data should be transfered from yt to mdb
@@ -478,9 +483,10 @@ if st.button("Collect and store data"):#creating a button# by clicking the butto
     coll1=db["channel_details"]
     for ch_data in coll1.find({},{"_id":0,"channel_information":1}):
         ch_ids.append(ch_data["channel_information"]["channelid"])
-
+        
+#IF ALREADY THE DATA EXISTS IT WOULD SHOW A MESSAGE SAYING DETAILS ALREADY EXISTS IF NOT IT WOULD ALLOW YOU TO INSERT IDS
     if channel_id in ch_ids:#if channalmid already exists
-        st.success('details already exists')
+        st.success('Details already exists')
     else:
         insert=channel_details(channel_id)# if not insert
         st.success(insert)
@@ -491,12 +497,15 @@ coll1=db["channel_details"]
 for ch_data in coll1.find({},{"_id":0,"channel_information":1}):#empty{}denotes all the channel details #only channel info will b extracte
     all_channels.append(ch_data["channel_information"]["channelname"])
 
+#SELECT CHANNEL BOX 
 unique_channel=st.selectbox('select channel',all_channels)
 
+#MIGRATE TO SQL BUTTON
 if st. button('Migrate to SQL'):
     table=tables(unique_channel)
     st.success(table)
 
+#RADIO BUTTON
 show_table=st.radio("SELECT TABLE TO VIEW",("CHANNELS","PLAYLISTS","VIDEOS","COMMENTS"))
 
 if show_table=="CHANNELS":
@@ -510,14 +519,14 @@ elif show_table=="COMMENTS":
 
 
 
-#SQL connection
+#SQL CONNECTION
 mydb=psycopg2.connect(host="localhost",
                         user="postgres",
                         password="root123",
                         database="youtubedata",
                         port="5432")
 cursor=mydb.cursor()
-
+#QUESTION
 question=st.selectbox("select yout question",("1. All the videos and channel name",
                                               "2. Channels with most number of viewes",
                                               "3. 10 most viewed video",
@@ -531,17 +540,24 @@ question=st.selectbox("select yout question",("1. All the videos and channel nam
 
 
 
-#sql connection
+#SQL CONNECTION
 mydb=psycopg2.connect(host="localhost",
                         user="postgres",
                         password="root123",
                         database="youtubedata",
                         port="5432")
 cursor=mydb.cursor()
-"4. comments in each videos",
-"5. videos with highest likes",
-"6. Likes of all videos",
-"7. Views of each channel",
+
+'''OUT PUT FOR THE QUESTION ""1. All the videos and channel name",
+                                              "2. Channels with most number of viewes",
+                                              "3. 10 most viewed video",
+                                              "4. comments in each videos",
+                                              "5. videos with highest likes",
+                                              "6. Likes of all videos",
+                                              "7. Views of each channel",
+                                              "8. Videos published int the year of 2023",
+                                              "9. average duration of all video's in each channel",
+                                              "10. video's with highest number of comments'''
 
 if question=="1. All the videos and channel name":
     query1='''select title as videos,channel_name as channelname from videos'''
